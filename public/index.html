@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WhatsApp QR Code</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.16/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="flex items-center justify-center h-screen bg-gray-200">
+  <div class="w-64 h-64 border-2 border-gray-300 p-4">
+    <img id="qr-code" src="" alt="QR Code">
+    <p id="status">Not authenticated</p>
+    <p id="timer">20</p>
+  </div>
+
+  <script>
+    var tryCount = 0;
+    var countdown = 20;
+
+    function refreshQrCode() {
+      fetch("/qr")
+        .then((response) => response.text())
+        .then((qr) => {
+          document.getElementById("qr-code").src = qr;
+        });
+
+      fetch("/auth-status")
+        .then((response) => response.json())
+        .then((status) => {
+          if (status) {
+            document.getElementById("status").innerText = "Authenticated";
+            clearInterval(countdownTimerId);
+            clearTimeout(pollingTimerId);
+          } else if (tryCount === 3) {
+            document.getElementById("status").innerText = "Please refresh the page.";
+            clearInterval(countdownTimerId);
+            clearTimeout(pollingTimerId);
+          } else {
+            document.getElementById("status").innerText = "Not authenticated";
+            countdown = 20;
+            tryCount++;
+          }
+        });
+    }
+
+    refreshQrCode();
+
+    var pollingTimerId = setInterval(refreshQrCode, 20000);
+
+    var countdownTimerId = setInterval(function() {
+      countdown--;
+      document.getElementById("timer").innerText = countdown;
+      if (countdown === 0 && tryCount < 3) {
+        countdown = 20;
+      }
+    }, 1000);
+  </script>
+</body>
+</html>

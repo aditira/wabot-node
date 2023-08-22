@@ -1,7 +1,11 @@
-const qrcode = require("qrcode-terminal");
+const qrcode = require("qrcode");
 const { Client, LocalAuth, MessageMedia } = require("whatsapp-web.js");
 const axios = require("axios");
 require('dotenv').config();
+const express = require("express");
+
+const app = express();
+app.use(express.static("public"));
 
 const client = new Client({
   authStrategy: new LocalAuth(),
@@ -9,12 +13,27 @@ const client = new Client({
 
 client.initialize();
 
+let qrSvg = "";
+
 client.on("qr", (qr) => {
-  qrcode.generate(qr, { small: true });
+  qrcode.toDataURL(qr, { errorCorrectionLevel: 'H' }, function(err, url) {
+    qrSvg = url;
+  });
 });
+
+app.get("/qr", (req, res) => {
+  res.send(qrSvg);
+});
+
+let isAuthenticated = false;
 
 client.on("authenticated", () => {
   console.log("AUTHENTICATED");
+  isAuthenticated = true;
+});
+
+app.get("/auth-status", (req, res) => {
+  res.send(isAuthenticated);
 });
 
 client.on("ready", () => {
@@ -52,3 +71,5 @@ client.on("message", async (message) => {
       });
   }
 });
+
+app.listen(3000, () => console.log("Server running at http://localhost:3000"));
